@@ -64,3 +64,10 @@ nginx -s reopen
 # pm2
 ## 重启服务
 pm2 restart coverage-server
+
+
+
+# surge
+surge dist --domain http://weather.kolo.asia/
+
+>dist表示目录，如果不加，则表示当前目录

@@ -7,7 +7,7 @@
         <span class="time">{{ formatTime(now.obsTime) }}</span>
       </div>
       <div class="core">
-        <img v-show="hasData" class="icon" :src="formatIcon(now.icon)">
+        <img v-show="now.icon" class="icon" :src="formatIcon(now.icon)">
         <span v-show="hasData" class="temp">{{ now.temp }}°</span> <span class="text">{{ now.text }}</span>
       </div>
       <div class="other">
@@ -128,5 +128,6 @@ export default {
       margin-top: 12px;
     }
   }
+
 }
 </style>
