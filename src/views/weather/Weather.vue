@@ -4,14 +4,14 @@
     <div class="now">
       <div class="header-menu">
         <h4 class="city">{{ location }}</h4>
-        <span class="time">{{ formatTime(now.obsTime) }}</span>
+        <span class="time">{{ formatTime(now.lastUpdate) }}</span>
       </div>
       <div class="core">
-        <img v-show="now.icon" class="icon" :src="formatIcon(now.icon)">
+        <img v-show="now.icon" class="icon" :src="formatCode(now.code)">
         <span v-show="hasData" class="temp">{{ now.temp }}°</span> <span class="text">{{ now.text }}</span>
       </div>
       <div class="other">
-        <span v-show="hasData">{{ now.windDir }} {{ now.windScale }}级 {{ formatPrecip(now.precip) }} </span>
+        <span v-show="hasData">{{ now.windDir }} {{ now.windScale }} {{ formatPrecip(now.precip) }} </span>
       </div>
     </div>
   </div>
@@ -26,15 +26,17 @@ export default {
       location: '杭州',
       // api https://dev.qweather.com/docs/api/grid-weather/grid-weather-now/
       now: {
-        obsTime: '2023-05-23T14:12+08:00',
+        lastUpdate: '',
         temp: '',
         feelsLike: '',
-        icon: '',
+        code: '',
         text: '',
         windDir: '',
         windScale: '',
-        precip: '0.0' // 当前小时累计降水量，默认单位：毫米
+        precip: '0.0', // 当前小时累计降水量，默认单位：毫米,
+        brief: ''
       },
+
       warning: {},
       hour: {},
       day: {}
@@ -46,7 +48,18 @@ export default {
   methods: {
     loadData() {
       weatherNow().then((res) => {
-        this.now = res.now
+        const real = res.result.realtime
+        this.now = {
+          lastUpdate: res.result.last_update,
+          temp: Math.round(real.temp),
+          feelsLike: real.feels_like,
+          code: real.code,
+          text: real.text,
+          windDir: real.wind_dir,
+          windScale: real.wind_class,
+          precip: real.prec,
+          brief: real.brief
+        }
         this.hasData = true
       })
     },
@@ -59,9 +72,9 @@ export default {
       if (munutes < 10) munutes = '0' + munutes
       return `观测时间 ${hours}:${munutes}`
     },
-    formatIcon(icon) {
+    formatCode(code) {
       // return `https://a.hecdn.net/img/common/icon/202106d/${icon}.png`
-      return `/img/weathericon/${icon}.png`
+      return `/img/weathericon/${code}.png`
     },
     formatPrecip(precip) {
       return precip > 0 ? `降雨量${precip}毫米` : ''
