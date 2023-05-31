@@ -5,7 +5,7 @@
         <router-view />
       </keep-alive>
     </div>
-    <app-tab-bar />
+
   </div>
 </template>
 <script>
@@ -37,17 +37,17 @@ export default {
 
 // @import "common/style.css";
 .router-container {
-    position: absolute;
-    top: 0px;
-    bottom: 0px;
-    // bottom: var(--tabbar-height);
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+  // bottom: var(--tabbar-height);
 }
 
 .app {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
 }
 </style>

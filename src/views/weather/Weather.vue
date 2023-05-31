@@ -7,7 +7,7 @@
         <span class="time">{{ formatTime(now.lastUpdate) }}</span>
       </div>
       <div class="core">
-        <img v-show="now.icon" class="icon" :src="formatCode(now.code)">
+        <img v-show="now.code" class="icon" :src="formatCode(now.code)">
         <span v-show="hasData" class="temp">{{ now.temp }}°</span> <span class="text">{{ now.text }}</span>
       </div>
       <div class="other">
@@ -18,12 +18,15 @@
 </template>
 
 <script>
-import { weatherNow } from '@/network/weather'
+import { weatherNow, weatherHour } from '@/network/weather'
+import { isDaytime } from '@/utils/sunCalc'
 export default {
   data() {
     return {
       hasData: false,
       location: '杭州',
+      lat: 30.28,
+      lng: 120.01,
       // api https://dev.qweather.com/docs/api/grid-weather/grid-weather-now/
       now: {
         lastUpdate: '',
@@ -38,15 +41,19 @@ export default {
       },
 
       warning: {},
-      hour: {},
+      hours: [{
+        text: '',
+        code: '',
+        temp: ''
+      }],
       day: {}
     }
   },
   created() {
-    this.loadData()
+    this.loadWeatherNow()
   },
   methods: {
-    loadData() {
+    loadWeatherNow() {
       weatherNow().then((res) => {
         const real = res.result.realtime
         this.now = {
@@ -63,6 +70,10 @@ export default {
         this.hasData = true
       })
     },
+    loadWeatherHour() {
+      weatherHour().then((res) => {
+      })
+    },
     formatTime(time) {
       const date = new Date(time)
       console.log(date.getHours())
@@ -72,9 +83,17 @@ export default {
       if (munutes < 10) munutes = '0' + munutes
       return `观测时间 ${hours}:${munutes}`
     },
+    // https://easy-open-link.feishu.cn/wiki/wikcnvz05NuYDNZQswrQgixdj1b
     formatCode(code) {
-      // return `https://a.hecdn.net/img/common/icon/202106d/${icon}.png`
-      return `/img/weathericon/${code}.png`
+      var key = code
+      if (code === '00' || code === '01' || code === '02' || code === '03' || code === '13') {
+        const suffix = isDaytime(new Date(), this.lat, this.lng) ? 'd' : 'n'
+        key = `${code}${suffix}`
+      }
+      console.log(`code,key:${code},${key}`)
+      var icon = `/img/weathericon/${key}.png`
+
+      return icon
     },
     formatPrecip(precip) {
       return precip > 0 ? `降雨量${precip}毫米` : ''
@@ -122,14 +141,14 @@ export default {
 
       .temp {
         margin-left: 12px;
-        margin-top: 8px;
+        margin-top: 6px;
         font-size: 30px;
         font-weight: 700;
       }
 
       .text {
         margin-left: 6px;
-        margin-top: 8px;
+        margin-top: 6px;
         font-size: 16px;
         font-weight: 300;
       }
