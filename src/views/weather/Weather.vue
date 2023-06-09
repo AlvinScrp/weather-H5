@@ -3,7 +3,7 @@
     <!-- <div>sdsdssdsdsdsddsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsd</div> -->
     <div v-if="hasNow" class="now card">
       <div class="header-menu">
-        <h4 class="city">{{ location }}</h4>
+        <span class="title">{{ location }}</span>
         <span class="time">{{ `观测时间 ${formatTime(now.lastUpdate)}` }}</span>
       </div>
       <div class="core">
@@ -15,40 +15,33 @@
       </div>
     </div>
     <div v-show="hasHours" class="hours card">
-      <h4>未来24小时</h4>
+      <div>
+        <span class="title">未来24小时</span><span style="margin-left: 0.12rem;"> {{ hours.tempRange }}</span>
+      </div>
       <div class="out">
         <div class="inner">
-          <div v-for="hour in hours" :key="hour.data_time" class="hour-item">
-            <div class="time">
-              {{ formatTime(hour.time) }}
-            </div>
-            <img class="code" :src="formatCode(hour.code, hour.time)">
+          <div v-for="hour in hours.list" :key="hour.data_time" class="hour-item">
             <div class="temp">
               {{ hour.temp }}°
             </div>
-            <div class="line" />
+            <div class="graph" :style="hourGraphPointStyle(hour.graph.h)" />
+            <img class="code" :src="formatCode(hour.code, hour.time)">
+            <div class="time">
+              {{ formatHour(hour.time) }}
+            </div>
+
           </div>
         </div>
       </div>
     </div>
-    <div class="test">
-      <p>线段</p>
-      <!-- <canvas ref="canvas" class="canvas" width="200" height="200" /> -->
-    </div>
-    <div class="chart">
-      <!-- <div class="point point1" /> -->
-      <div class="line line1" />
-      <!-- <div class="point  point2" /> -->
-      <div class="line line2" />
-      <!-- <div class="point point3" /> -->
-      <div class="line line3" />
-    </div>
+
   </div>
 </template>
 
 <script>
 import { weatherNow, weatherHour } from '@/network/weather'
 import { isDaytime } from '@/utils/sunCalc'
+import { graphData } from '@/utils/hoursGraph'
 export default {
   data() {
     return {
@@ -71,22 +64,21 @@ export default {
       },
 
       warning: {},
-      hours: [{
-        text: '',
-        code: '',
-        temp: '',
-        time: '',
-        bg: {
-          line: [{ x: 0, y: 0, l: 0, degree: 30 }],
-          point: { x: 0, y: 0 }
-        }
-      }],
-      day: {}
+      hours: {
+        tempRange: '',
+        list: [{
+          text: '',
+          code: '',
+          temp: '',
+          time: '',
+          graph: [{ h: 1 }]
+        }]
+      },
+      days: {}
     }
   },
   mounted() {
     this.loadWeatherNow()
-    this.xianDuan()
   },
 
   methods: {
@@ -110,7 +102,8 @@ export default {
     },
     loadWeatherHour() {
       weatherHour().then((res) => {
-        this.hours = res.result.hourly_fcsts.map((hourly) => {
+        const hourlyes = res.result.hourly_fcsts
+        const hours = hourlyes.map((hourly) => {
           return {
             text: hourly.text,
             code: hourly.code,
@@ -118,6 +111,16 @@ export default {
             time: hourly.data_time
           }
         })
+        const temps = hours.map((hour) => hour.temp)
+        const max = Math.max(...temps)
+        const min = Math.min(...temps)
+        this.hours.tempRange = `${min}°~${max}°`
+        const graphs = graphData(50, temps)
+        for (let i = 0; i < hours.length; i++) {
+          hours[i].graph = graphs[i]
+        }
+        console.log(JSON.stringify(graphs))
+        this.hours.list = hours
         this.hasHours = true
       })
     },
@@ -128,6 +131,12 @@ export default {
       if (hours < 10) hours = '0' + hours
       if (munutes < 10) munutes = '0' + munutes
       return `${hours}:${munutes}`
+    },
+    formatHour(time) {
+      const date = new Date(time)
+      var hours = date.getHours()
+      var unit = hours <= 12 ? 'am' : 'pm'
+      return `${hours}${unit}`
     },
     // https://easy-open-link.feishu.cn/wiki/wikcnvz05NuYDNZQswrQgixdj1b
     formatCode(code, time) {
@@ -148,17 +157,14 @@ export default {
     formatPrecip(precip) {
       return precip > 0 ? `降雨量${precip}毫米` : ''
     },
-    xianDuan() {
-      // const canvas = this.$refs.canvas
 
-      // var ctx = canvas.getContext('2d')
-      // ctx.subpixel = 'gray'
-      // //  设置边框颜色 ， 用与描绘边框时填充边框
-      // ctx.strokeStyle = 'red'
-      // ctx.moveTo(0, 0) // moveTo(x,y) 定义线条开始坐标
-      // ctx.lineTo(100, 100) // lineTo(x,y) 定义线条结束坐标
-      // ctx.quadraticCurveTo(130, 130, 150, 180)
-      // ctx.stroke()
+    hourGraphPointStyle(h) {
+      return {
+        height: `${(h + 5)}px`
+        // marginTop: `${35 - point.y}px`
+        // paddingTop: `${point.y}px`
+        // marginTop: '10px'
+      }
     }
   }
 }
@@ -166,6 +172,11 @@ export default {
 <style lang="less" scoped>
 .container {
   width: 100vw;
+
+  .title {
+    font-weight: 700;
+    font-size: 0.15rem;
+  }
 
   .card {
     border-radius: 0.12rem;
@@ -205,8 +216,9 @@ export default {
       }
 
       .temp {
+        height: 0.5rem;
         margin-left: 12px;
-        margin-top: 6px;
+        margin-top: 12px;
         font-size: 30px;
         font-weight: 700;
       }
@@ -231,7 +243,6 @@ export default {
     .out {
       overflow-x: scroll;
       overflow-y: hidden;
-      margin-top: 0.12rem;
       margin-bottom: 0.04rem;
       align-items: center;
       width: 100%;
@@ -248,30 +259,34 @@ export default {
         .hour-item {
           display: flex;
           flex-direction: column;
-          height: auto;
+          justify-content: flex-end;
           align-items: center;
-          align-self: center;
 
-          .time {
-            margin: 0rem 0.06rem;
+          .temp {
+            margin-left: 0.06rem;
+            margin-bottom: 0.04rem;
+            text-align: center;
+            position: relative;
+          }
+
+          .graph {
+            width: 0.05rem;
+            background-color: #007bff;
+            border-radius: 0.05rem;
           }
 
           .code {
-            margin: 0.06rem;
+            margin-top: 0.06rem;
             height: 0.24rem;
             width: 0.24rem;
           }
 
-          .temp {
+          .time {
+            margin: 0.04rem;
+            font-size: 0.13rem;
+            color: rgba(0, 0, 0, 0.5);
             text-align: center;
           }
-
-          .line {
-            width: 0.2rem;
-            height: 0.5rem;
-            background-color: aqua;
-          }
-
         }
       }
     }
@@ -283,75 +298,6 @@ export default {
     border-bottom: 2px solid black;
     border-left: 2px solid black;
 
-  }
-
-  .canvas {
-    display: block;
-    margin: 0 auto;
-    border: solid 2px #999;
-
-  }
-
-  .chart {
-    border-bottom: 2px solid black;
-    border-left: 2px solid black;
-    height: 2rem;
-    width: 2rem;
-
-    .point {
-      border-radius: 50%;
-      position: absolute;
-      height: 12px;
-      width: 12px;
-      z-index: 1;
-    }
-
-    .point1 {
-      background-color: violet;
-      bottom: 76px;
-      left: 36px;
-    }
-
-    .point2 {
-      background-color: pink;
-      bottom: 116px;
-      left: 76px;
-    }
-
-    .point3 {
-      background-color: orange;
-      bottom: 76px;
-      left: 116px;
-    }
-
-    .line {
-      height: 3px;
-      position: absolute;
-      transform-origin: left bottom;
-      width: 56.57px;
-    }
-
-    .line1 {
-      background-color: black;
-      bottom: 80px;
-      left: 40px;
-      transform: rotate(-45deg);
-    }
-
-    .line2 {
-      background-color: black;
-      bottom: 120px;
-      left: 80px;
-      transform: rotate(45deg);
-
-    }
-
-    .line3 {
-      background-color: black;
-      bottom: 80px;
-      left: 120px;
-      transform: rotate(45deg);
-    }
   }
 
 }
