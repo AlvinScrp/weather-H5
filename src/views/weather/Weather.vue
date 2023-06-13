@@ -17,7 +17,6 @@
     <div class="hours card">
       <div>
         <span class="title">未来24小时</span>
-        <!-- <span style="margin-left: 0.12rem;"> {{ hours.tempRange }}</span> -->
       </div>
       <div class="out">
         <div class="inner">
@@ -226,6 +225,11 @@ export default {
 <style lang="less" scoped>
 .container {
   width: 100vw;
+  top: 0px;
+  bottom: 0px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  position: absolute;
 
   .title {
     font-weight: 700;
@@ -236,8 +240,8 @@ export default {
     border-radius: 0.12rem;
     // background-image: linear-gradient(225deg, #fee5ca, #e9f0ff 55%, #dce3fb);
     background-color: var(--card-border-color);
-    padding: 0.12rem;
-    margin: 0.12rem;
+    padding: 0.12rem 0.12rem;
+    margin: 0.12rem 0.12rem;
   }
 
   .now {
@@ -250,37 +254,36 @@ export default {
       .city {}
 
       .time {
-        font-size: 14px;
+        font-size: 0.14rem;
         font-weight: 300;
         color: var(--text-black-2);
       }
     }
 
     .core {
-      margin-top: 0.06rem;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 0.48rem;
+      height: 0.6rem;
 
       .icon {
-        width: 0.48rem;
-        height: 0.48rem;
+        width: 0.4rem;
+        height: 0.4rem;
 
       }
 
       .temp {
-        height: 0.5rem;
-        margin-left: 12px;
-        margin-top: 12px;
-        font-size: 30px;
+        height: 0.4rem;
+        margin-left: 0.1rem;
+        margin-top: 0.1rem;
+        font-size: 0.3rem;
         font-weight: 700;
       }
 
       .text {
-        margin-left: 6px;
-        margin-top: 6px;
-        font-size: 16px;
+        margin-left: 0.06rem;
+        margin-top: 0.06rem;
+        font-size: 0.16rem;
         font-weight: 300;
       }
     }
@@ -288,12 +291,11 @@ export default {
     .other {
       height: 16px;
       width: auto;
-      margin-top: 12px;
     }
   }
 
   .hours {
-    height: 1.77rem;
+    height: 1.7rem;
 
     .out {
       overflow-x: scroll;
@@ -360,7 +362,7 @@ export default {
     .day-item {
       display: flex;
       flex-flow: row;
-      height: 0.40rem;
+      height: 0.4rem;
       margin-bottom: 0.06rem;
       padding: 0rem 0.16rem;
       align-items: center;
