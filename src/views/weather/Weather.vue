@@ -1,26 +1,27 @@
 <template>
   <div class="container">
     <!-- <div>sdsdssdsdsdsddsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsdsd</div> -->
-    <div v-if="hasNow" class="now card">
+    <div class="now card">
       <div class="header-menu">
         <span class="title">{{ location }}</span>
         <span class="time">{{ `观测时间 ${formatTime(now.lastUpdate)}` }}</span>
       </div>
       <div class="core">
-        <img v-show="now.code" class="icon" :src="formatCode(now.code, now.lastUpdate)">
+        <img v-if="hasNow" class="icon" :src="formatCode(now.code, now.lastUpdate)">
         <span class="temp">{{ now.temp }}°</span> <span class="text">{{ now.text }}</span>
       </div>
       <div class="other">
         <span v-show="hasNow">{{ now.windDir }} {{ now.windScale }} {{ formatPrecip(now.precip) }} </span>
       </div>
     </div>
-    <div v-show="hasHours" class="hours card">
+    <div class="hours card">
       <div>
-        <span class="title">未来24小时</span><span style="margin-left: 0.12rem;"> {{ hours.tempRange }}</span>
+        <span class="title">未来24小时</span>
+        <!-- <span style="margin-left: 0.12rem;"> {{ hours.tempRange }}</span> -->
       </div>
       <div class="out">
         <div class="inner">
-          <div v-for="hour in hours.list" :key="hour.data_time" class="hour-item">
+          <div v-for="hour in hours.list" v-show="hasHours" :key="hour.data_time" class="hour-item">
             <div class="temp">
               {{ hour.temp }}°
             </div>
@@ -35,11 +36,29 @@
       </div>
     </div>
 
+    <div class="days card">
+
+      <div v-show="!hasDays" class="look-days" @click="handleLookDays()">
+        点击查看最近10日
+      </div>
+
+      <div v-for="day in days" :key="day.data_time" class="day-item">
+
+        <span class="date">{{ day.week }} {{ day.date }}</span>
+        <div class="right">
+          <img class="code" :src="formatCode(day.codeDay, null, true)">
+          <img class="code" :src="formatCode(day.codeDay, null, false)">
+          <div class="space" />
+          <span class="temp">{{ day.tempLow }}°~{{ day.tempHigh }}°</span>
+        </div>
+      </div>
+
+    </div>
   </div>
 </template>
 
 <script>
-import { weatherNow, weatherHour } from '@/network/weather'
+import { weatherNow, weatherHours, weatherDays } from '@/network/weather'
 import { isDaytime } from '@/utils/sunCalc'
 import { graphData } from '@/utils/hoursGraph'
 export default {
@@ -47,6 +66,7 @@ export default {
     return {
       hasNow: false,
       hasHours: false,
+      hasDays: false,
       location: '杭州',
       lat: 30.28,
       lng: 120.01,
@@ -79,6 +99,7 @@ export default {
   },
   mounted() {
     this.loadWeatherNow()
+    // this.handleLookDays()
   },
 
   methods: {
@@ -101,8 +122,9 @@ export default {
       })
     },
     loadWeatherHour() {
-      weatherHour().then((res) => {
-        const hourlyes = res.result.hourly_fcsts
+      weatherHours().then((res) => {
+        // const hourlyes = res.result.hourly_fcsts//
+        const hourlyes = res.result.th_hours
         const hours = hourlyes.map((hourly) => {
           return {
             text: hourly.text,
@@ -139,14 +161,25 @@ export default {
       return `${hours}${unit}`
     },
     // https://easy-open-link.feishu.cn/wiki/wikcnvz05NuYDNZQswrQgixdj1b
-    formatCode(code, time) {
+    formatCode(code, time, orIsDaytime) {
       if (!code) {
         return ''
       }
-      const date = new Date(time)
+
       var key = code
       if (code === '00' || code === '01' || code === '02' || code === '03' || code === '13') {
-        const suffix = isDaytime(date, this.lat, this.lng) ? 'd' : 'n'
+        var isDaytimeInner = false
+
+        if (orIsDaytime != null) {
+          console.log('orIsDaytime !=null ')
+          isDaytimeInner = orIsDaytime
+        } else {
+          console.log('orIsDaytime is null ')
+          const date = new Date(time)
+          isDaytimeInner = isDaytime(date, this.lat, this.lng)
+        }
+
+        const suffix = isDaytimeInner ? 'd' : 'n'
         key = `${code}${suffix}`
       }
       console.log(`code,key:${code},${key}`)
@@ -154,6 +187,7 @@ export default {
 
       return icon
     },
+
     formatPrecip(precip) {
       return precip > 0 ? `降雨量${precip}毫米` : ''
     },
@@ -165,6 +199,26 @@ export default {
         // paddingTop: `${point.y}px`
         // marginTop: '10px'
       }
+    },
+    handleLookDays() {
+      weatherDays().then((res) => {
+        // const hourlyes = res.result.hourly_fcsts//
+        const dailys = res.result.daily_fcsts
+        const days = dailys.map((daily) => {
+          return {
+            codeDay: daily.code_day,
+            codeNight: daily.code_night,
+            tempHigh: daily.high,
+            tempLow: daily.low,
+            date: daily.date.substring(5, 10),
+            week: daily.week.replace('星期', '周')
+          }
+        })
+        days[0].date = '今日'
+
+        this.days = days
+        this.hasDays = true
+      })
     }
   }
 }
@@ -239,6 +293,7 @@ export default {
   }
 
   .hours {
+    height: 1.77rem;
 
     .out {
       overflow-x: scroll;
@@ -282,7 +337,7 @@ export default {
           }
 
           .time {
-            margin: 0.04rem;
+            margin: 0.055rem;
             font-size: 0.13rem;
             color: rgba(0, 0, 0, 0.5);
             text-align: center;
@@ -292,12 +347,48 @@ export default {
     }
   }
 
-  .test {
-    width: 200px;
-    height: 200px;
-    border-bottom: 2px solid black;
-    border-left: 2px solid black;
+  .days {
+    .look-days {
+      margin: -0.06rem;
+      padding: 0.06rem;
+      display: flex;
+      flex-direction: row;
+      align-content: center;
+      justify-content: center;
+    }
 
+    .day-item {
+      display: flex;
+      flex-flow: row;
+      height: 0.40rem;
+      margin-bottom: 0.06rem;
+      padding: 0rem 0.16rem;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.15rem;
+      border-radius: 0.1rem;
+      background-color: rgba(0, 0, 0, 0.03);
+
+      .date {
+        width: 1rem;
+      }
+
+      .right {
+        display: flex;
+        flex-flow: row;
+        align-items: center;
+
+        .code {
+          width: 0.24rem;
+          height: 0.24rem;
+        }
+
+        .space {
+          width: 0.1rem;
+        }
+      }
+
+    }
   }
 
 }
